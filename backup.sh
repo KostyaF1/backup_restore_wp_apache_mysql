@@ -10,7 +10,7 @@ FILENAME=`basename $CONF .conf`
 BACKUP_FILE="$FILENAME'_'$DATE.conf"
 FULL_PATH_BACKUP_FILE="$BACKUP_FOLDER/$BACKUP_FILE"
 
-find $BACKUP_FOLDER -name "$FILENAME*" -type f -mmin +5 -rm
+find $BACKUP_FOLDER -name "$FILENAME*" -type f -amin +5 -delete
 rsync -e ssh -a --delete $SERVER:$CONF $FULL_PATH_BACKUP_FILE
 
 # Wordpress credentials

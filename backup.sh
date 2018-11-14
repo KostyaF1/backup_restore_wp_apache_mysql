@@ -19,15 +19,16 @@ rsync -e ssh -a --delete $SERVER:$CONF $FULL_PATH_BACKUP_FILE
 # Wordpress credentials
 WP_CONTENT="/var/www/html/"
 WEEKLY_BACKUP="weekly_wp-content_$DATE.tar.gz"
-DALY_BACKUP="wp-content.tar.gz"
-DALY_INCR="wp-content_$DATE.tar.gz"
+DALY_BACKUP="wp-content_$DATE.tar.gz"
 
 if [ "$PARAM" == "dd" ]; then
 #Daly differencial Backup
 
-    ssh $SERVER "cd $WP_CONTENT && tar cvzf $DALY_BACKUP wp-content"
+    find $BACKUP_FOLDER -name "wp-content*" -type f -mmin +6 -delete
 
-    rsync -ab --delete --suffix=_"$DATE" -e ssh $SERVER:$WP_CONTENT$DALY_BACKUP "$BACKUP_FOLDER/"
+    ssh $SERVER "cd $WP_CONTENT && tar cvzf $DALY_BACKUP wp-content; echo $?"
+
+    rsync -ab --delete -e ssh $SERVER:$WP_CONTENT$DALY_BACKUP "$BACKUP_FOLDER/"
 
     ssh $SERVER "cd $WP_CONTENT && rm $DALY_BACKUP"; echo "rm ok"
 
@@ -36,25 +37,25 @@ elif [ "$PARAM" == "di" ]; then
 
     OLD_WP=$( basename `find $BACKUP_FOLDER -name "wp-content*"`)
 
-    ssh $SERVER "cd $WP_CONTENT && tar cvzf $DALY_INCR wp-content; echo $?"
+    ssh $SERVER "cd $WP_CONTENT && tar cvzf $DALY_BACKUP wp-content; echo $?"
 
-    rsync -av --delete -e ssh $SERVER:$WP_CONTENT$DALY_INCR "$BACKUP_FOLDER/$OLD_WP"
+    rsync -av --delete -e ssh $SERVER:$WP_CONTENT$DALY_BACKUP "$BACKUP_FOLDER/$OLD_WP"
 
-    ssh $SERVER "cd $WP_CONTENT && rm $DALY_INCR"; echo "rm ok"
+    ssh $SERVER "cd $WP_CONTENT && rm $DALY_BACKUP"; echo "rm ok"
 
-    mv $BACKUP_FOLDER/$OLD_WP $BACKUP_FOLDER/$DALY_INCR; echo "update ok"
+    mv $BACKUP_FOLDER/$OLD_WP $BACKUP_FOLDER/$DALY_BACKUP; echo "update ok"
 
 
 elif [ "$PARAM" == "w" ]; then
 # Weekly backup
 
     if [[ ! `find $BACKUP_FOLDER -name 'weekly_wp-content*'` ]]; then
-        ssh $SERVER "cd $WP_CONTENT && tar cvzf $WEEKLY_BACKUP wp-content"
+        ssh $SERVER "cd $WP_CONTENT && tar cvzf $WEEKLY_BACKUP wp-content; echo $?"
         rsync -ab -e ssh $SERVER:$WP_CONTENT$WEEKLY_BACKUP  "$BACKUP_FOLDER"
         ssh $SERVER "cd $WP_CONTENT && rm $WEEKLY_BACKUP"; echo "rm ok"
     elif [[ `find $BACKUP_FOLDER -name 'weekly_wp-content*' -cmin +5` ]]; then
         find $BACKUP_FOLDER -name "weekly_wp-content*"  -mmin +6 -delete
-        ssh $SERVER "cd $WP_CONTENT && tar cvzf $WEEKLY_BACKUP wp-content"
+        ssh $SERVER "cd $WP_CONTENT && tar cvzf $WEEKLY_BACKUP wp-content; echo $?"
         rsync -ab -e ssh $SERVER:$WP_CONTENT$WEEKLY_BACKUP  "$BACKUP_FOLDER"
         ssh $SERVER "cd $WP_CONTENT && rm $WEEKLY_BACKUP"; echo "rm ok"
     fi
